@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #ifndef SCREEN_H
 #define SCREEN_H
 
@@ -16,5 +18,13 @@ void clear_screen();
 void kprint_at(char *message, int col, int row);
 void kprint(char *message);
 void kprint_backspace();
+void kprintln(char *message);
+
+void kprintln_int(uint8_t val);
+
+/* Extended screen APIs */
+void kprint_at_animated(char *message, int col, int row);
+void kprint_animated(char *message);
+void kprintln_animated(char *message);
 
 #endif

@@ -10,11 +10,11 @@
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
 
-// #define LSHIFT_DOWN 0x2A
-// #define LSHIFT_UP 0x0A
-// int uppercase_state = 0;
-
-static char key_buffer[256];
+// A ring-buffer for keystrokes
+#define MAX_BUFFER 16
+static int MAX_KEY_BUFFER = MAX_BUFFER;
+static char key_buffer[MAX_BUFFER];
+static int key_buffer_i = 0;
 
 #define SC_MAX 57
 const char *sc_name[] = { "ERROR", "Esc", "1", "2", "3", "4", "5", "6", 
@@ -37,62 +37,72 @@ const char sc_ascii[] = { '?', '?', '1', '2', '3', '4', '5', '6',
 static void keyboard_callback(registers_t *regs) {
     /* The PIC leaves us the scancode in port 0x60 */
     uint8_t scancode = port_byte_in(0x60);
-
-    // Special keys to handle
-    // switch (scancode) {
-    //     case 0x1:
-    //         kprint("ESC");
-    //         break;
-	// 	case 0x2A:
-	// 		kprint("LShift");
-	// 		break;
-    //     case 0x36:
-    //         kprint("Rshift");
-    //         break;
-    //     default:
-    //         if (scancode <= 0x7f) {
-    //             kprint("Unknown key down");
-    //         } else if (scancode <= 0x39 + 0x80) {
-    //             kprint("key up ");
-    //         } else kprint("Unknown key up");
-    //         break;
-    // }
-
-    // char phys_str[16] = "";
-    // hex_to_ascii(scancode, phys_str);
-    // kprint(phys_str);
-    // kprint("\n");
-
-
-    // if (scancode == LSHIFT_DOWN) {
-    //     uppercase_state = 1;
-    // } else if (scancode == LSHIFT_UP) {
-    //     uppercase_state = 0;
-    // }
     
+    // Skip unsupported keystrokes
     if (scancode > SC_MAX) return;
-    if (scancode == BACKSPACE) {
-        backspace(key_buffer);
-        kprint_backspace();
-    } else if (scancode == ENTER) {
-        kprint("\n");
-        user_input(key_buffer); /* kernel-controlled function */
-        key_buffer[0] = '\0';
-    } else {
-        char letter;
-        if (0) {
-            letter = sc_ascii[(int)scancode];
-        } else {
-            letter = sc_lower_ascii[(int)scancode];
+
+    // Translate letter to ASCII
+    char letter;
+    letter = sc_ascii[(int)scancode];
+
+    // TODO: Make it less duplicated and confusing
+    if (scancode == BACKSPACE || scancode == ENTER) {
+        key_buffer[key_buffer_i++] = scancode;
+
+        if (key_buffer_i == MAX_KEY_BUFFER) {
+            key_buffer_i = 0;
         }
-        /* Remember that kprint only accepts char[] */
-        char str[2] = {letter, '\0'};
-        append(key_buffer, letter);
-        kprint(str);
+    } else if (letter - '?') {
+        // Skip non-typable characters
+        // Fill the keystroke buffer
+        // key_buffer_i would wrap around after reaching its max buffer
+        key_buffer[key_buffer_i++] = letter;
+
+        if (key_buffer_i == MAX_KEY_BUFFER) {
+            key_buffer_i = 0;
+        }
     }
+
+    // if (scancode > SC_MAX) return;
+    // if (scancode == BACKSPACE) {
+    //     backspace(key_buffer);
+    //     kprint_backspace();
+    // } else if (scancode == ENTER) {
+    //     kprint("\n");
+    //     user_input(key_buffer); /* kernel-controlled function */
+    //     key_buffer[0] = '\0';
+    // } else {
+    //     char letter;
+    //     letter = sc_ascii[(int)scancode];
+    //     // Skip non-typable characters
+    //     if (letter - '?') {
+    //         /* Remember that kprint only accepts char[] */
+    //         char str[2] = {letter, '\0'};
+    //         append(key_buffer, letter);
+    //         kprint(str);
+    //     }
+    // }
     UNUSED(regs);
 }
 
 void init_keyboard() {
    register_interrupt_handler(IRQ1, keyboard_callback); 
+
+   // Clear keyboard buffer
+//    uint32_t i = 0;
+//    while (i < 256) {
+//        key_buffer[i++] = '\0';
+//    }
+}
+
+char* get_keyboard_buffer() {
+    return key_buffer;
+}
+
+int get_keyboard_buffer_i() {
+    return key_buffer_i;
+}
+
+int get_max_keyboard_buffer() {
+    return MAX_KEY_BUFFER;
 }

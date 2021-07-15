@@ -147,7 +147,8 @@ void irq_install() {
     /* Enable interruptions */
     asm volatile("sti");
     /* IRQ0: timer */
-    init_timer(50);
+    // Initialize a 60Hz timer for animating stuff
+    init_timer(60);
     /* IRQ1: keyboard */
     init_keyboard();
 }

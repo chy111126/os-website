@@ -1,5 +1,6 @@
 #include "screen.h"
 #include "../cpu/ports.h"
+#include "../cpu/timer.h"
 #include "../libc/mem.h"
 #include <stdint.h>
 
@@ -49,6 +50,55 @@ void kprint_backspace() {
     int row = get_offset_row(offset);
     int col = get_offset_col(offset);
     print_char(0x08, col, row, WHITE_ON_BLACK);
+}
+
+void kprintln(char *message) {
+    kprint(message);
+    kprint("\n");
+}
+
+void kprintln_int(uint8_t val) {
+    char val_str[16] = "";
+    int_to_ascii(val, val_str);
+    kprintln(val_str);
+}
+
+void kprint_at_animated(char *message, int col, int row) {
+    // Uses a simpler implementation, where progression is done by modulus of PIT tick
+    /* Set cursor if col/row are negative */
+    int offset;
+    if (col >= 0 && row >= 0)
+        offset = get_offset(col, row);
+    else {
+        offset = get_cursor_offset();
+        row = get_offset_row(offset);
+        col = get_offset_col(offset);
+    }
+
+    /* Loop through message and print it */
+    int i = 0;
+    while (message[i] != 0) {
+        // Stale loop for animating text
+        int last_tick = get_tick();
+        while (get_tick() - last_tick < 1) {
+        }
+
+        // Print the character
+        offset = print_char(message[i++], col, row, WHITE_ON_BLACK);
+        
+        /* Compute row/col for next iteration */
+        row = get_offset_row(offset);
+        col = get_offset_col(offset);
+    }
+}
+
+void kprint_animated(char *message) {
+    kprint_at_animated(message, -1, -1);
+}
+
+void kprintln_animated(char *message) {
+    kprint_animated(message);
+    kprint("\n");
 }
 
 
