@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "../drivers/screen.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/serial_port.h"
 #include "../libc/string.h"
 #include "timer.h"
 #include "ports.h"
@@ -151,4 +152,6 @@ void irq_install() {
     init_timer(60);
     /* IRQ1: keyboard */
     init_keyboard();
+    /* IRQ4: COM port */
+    int res = init_serial_port();
 }

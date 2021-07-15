@@ -23,6 +23,34 @@ window.onload = function()
         },
         autostart: true,
     });
+
+    var data = "";
+    emulator.add_listener("serial0-output-char", function(char)
+    {
+        if(char === "\r")
+        {
+            return;
+        }
+
+        data += char;
+        document.getElementById("terminal").value += char;
+
+        // var current = stages[stage];
+
+        // if(!current)
+        // {
+        //     return;
+        // }
+
+        // if(data.endsWith(current.test))
+        // {
+        //     stage++;
+        //     emulator.serial0_send(current.send);
+
+        //     var log = "Sending: " + current.send.replace(/\n/g, "\\n") + "\n";
+        //     document.getElementById("log").value += log;
+        // }
+    });
 }
 </script>
 
@@ -31,3 +59,6 @@ window.onload = function()
     <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
     <canvas style="display: none"></canvas>
 </div>
+
+<!-- Serial terminal -->
+<textarea readonly rows=25 cols=60 id="terminal"></textarea>

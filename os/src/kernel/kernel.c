@@ -2,6 +2,7 @@
 #include "../cpu/timer.h"
 #include "../drivers/screen.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/serial_port.h"
 #include "kernel.h"
 #include "../libc/string.h"
 #include "../libc/mem.h"
@@ -17,7 +18,6 @@ void kernel_main() {
     isr_install();
     irq_install();
 
-    clear_screen();
 
     kprint("Type something, it will go through the kernel\n"
         "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
@@ -61,7 +61,10 @@ void wait_for_keyboard_input(out_buffer) {
         while (key_buffer_start_i != key_buffer_i) {
             // Get character
             char curr_char = keyboard_buffer[key_buffer_start_i];
-
+            
+            // Write to terminal
+            write_serial(curr_char);
+            
             // Check special characters
             if (curr_char == BACKSPACE) {
                 // Backspace: remove one character from input_buffer
@@ -78,8 +81,9 @@ void wait_for_keyboard_input(out_buffer) {
                 // input_buffer[0] = '\0';
                 strcpy(input_buffer, out_buffer, INPUT_MAX_CHARS);
                 return;
-            } else if (strlen(input_buffer) == INPUT_MAX_CHARS) {
+            } else if (strlen(input_buffer) == INPUT_MAX_CHARS-1) {
                 // Not accepting new inputs if it exceeded input_buffer maximum
+                // -1 for null terminator safety
             } else {
                 append(input_buffer, curr_char);
                 // Printing to screen
