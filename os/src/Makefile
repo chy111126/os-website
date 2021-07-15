@@ -11,8 +11,6 @@ CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 
 # First rule is run by default
 # For os-image, pad the disk to standard disk sizes such that v86 can read it
-# dd if=/dev/null of=../build/os-image.bin bs=1 count=${REM_SIZE} seek=${KERNEL_SIZE}
-# KERNEL_SIZE=$(shell cat KERNEL_SIZE.txt); REM_SIZE=$(shell expr $(shell cat DISK_SIZE.txt) - $(shell cat KERNEL_SIZE.txt)); echo dd if=/dev/null of=../build/os-image.bin bs=1 count=$${REM_SIZE} seek=$${KERNEL_SIZE} >> PAD_RUN
 pad-os-image: pre-pad-os-image
 	dd if=/dev/zero of=../build/padded-os-image.bin bs=1 count=$(shell expr $(shell echo 163840) - $(shell ls -l ../build/os-image.bin | cut -d" "  -f8)) seek=$(shell ls -l ../build/os-image.bin | cut -d" "  -f8)
 

@@ -10,26 +10,33 @@
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
 
+#define INPUT_MAX_CHARS 77
+// int INPUT_BUFFER_MAX_CHARS = INPUT_MAX_CHARS;
+
 void kernel_main() {
     isr_install();
     irq_install();
 
+    clear_screen();
+
     kprint("Type something, it will go through the kernel\n"
         "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
 
+    char* command[INPUT_MAX_CHARS];
+    command[0] = '\0';
     while(1) {
         // Program routines goes here ...
+        user_input(command);
 
         // Get input from keyboard interrupts
-        wait_for_keyboard_input();
+        wait_for_keyboard_input(command);
     }
 }
 
-void wait_for_keyboard_input() {
+void wait_for_keyboard_input(out_buffer) {
     //TODO: Avoid using strlen and counting the input_buffer strlen ourselves
 
     // Kernel function keeping its own buffer
-    int INPUT_MAX_CHARS = 32;
     char input_buffer[INPUT_MAX_CHARS];
     // Clear input_buffer
     uint32_t input_buffer_i = 0;
@@ -66,9 +73,11 @@ void wait_for_keyboard_input() {
             } else if (curr_char == ENTER) {
                 // TODO: Pressing ENTER should return the function back to kernel_main
                 kprintln("");
-                kprint("> ");
+                //kprint("> ");
                 // user_input(input_buffer); /* kernel-controlled function */
-                input_buffer[0] = '\0';
+                // input_buffer[0] = '\0';
+                strcpy(input_buffer, out_buffer, INPUT_MAX_CHARS);
+                return;
             } else if (strlen(input_buffer) == INPUT_MAX_CHARS) {
                 // Not accepting new inputs if it exceeded input_buffer maximum
             } else {
@@ -93,6 +102,7 @@ void user_input(char *input) {
 
     if (strcmp(input, "END") == 0) {
         kprint("Stopping the CPU. Bye!\n");
+        asm volatile("cli");
         asm volatile("hlt");
     } else if (strcmp(input, "PAGE") == 0) {
         /* Lesson 22: Code to test kmalloc, the rest is unchanged */
@@ -113,10 +123,11 @@ void user_input(char *input) {
         uint32_t tick = get_tick();
         char tick_str[16] = "";
         int_to_ascii(tick, tick_str);
-        kprint_at_animated("Current tick is at: ", 5, 5);
+        kprint_animated("Current tick is at: ");
         kprintln_animated(tick_str);
     } else if (strcmp(input, "CLS") == 0) {
         clear_screen();
+    } else if (strcmp(input, '\0') == 0) {
     } else {
         kprint("You said: ");
         kprint(input);

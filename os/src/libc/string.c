@@ -75,3 +75,13 @@ int strcmp(char s1[], char s2[]) {
     }
     return s1[i] - s2[i];
 }
+
+int strcpy(char s1[], char s2[], int max_size) {
+    // Copy string from s1 to s2, terminated by \0 or max_size
+    int i = 0;
+    while (i < max_size) {
+        s2[i] = s1[i];
+        if (s2[i++] == '\0') return 0;
+    }
+    return -1;
+}
