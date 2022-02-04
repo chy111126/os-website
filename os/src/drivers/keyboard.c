@@ -10,6 +10,12 @@
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
 
+// Arrow keys, with extended code 0xE0
+#define ARROW_UP 0x48
+#define ARROW_DOWN 0x50
+#define ARROW_LEFT 0x4B
+#define ARROW_RIGHT 0x4D
+
 // A ring-buffer for keystrokes
 #define MAX_BUFFER 16
 static int MAX_KEY_BUFFER = MAX_BUFFER;
@@ -37,16 +43,17 @@ const char sc_ascii[] = { '?', '?', '1', '2', '3', '4', '5', '6',
 static void keyboard_callback(registers_t *regs) {
     /* The PIC leaves us the scancode in port 0x60 */
     uint8_t scancode = port_byte_in(0x60);
-    
+
     // Skip unsupported keystrokes
-    if (scancode > SC_MAX) return;
+    // A small hack to accept arrow keys
+    if (scancode > SC_MAX && scancode != ARROW_UP && scancode != ARROW_DOWN && scancode != ARROW_LEFT && scancode != ARROW_RIGHT) return;
 
     // Translate letter to ASCII
     char letter;
     letter = sc_ascii[(int)scancode];
 
     // TODO: Make it less duplicated and confusing
-    if (scancode == BACKSPACE || scancode == ENTER) {
+    if (scancode == BACKSPACE || scancode == ENTER || scancode == ARROW_UP || scancode == ARROW_DOWN || scancode == ARROW_LEFT || scancode == ARROW_RIGHT) {
         key_buffer[key_buffer_i++] = scancode;
 
         if (key_buffer_i == MAX_KEY_BUFFER) {
@@ -100,9 +107,18 @@ char* get_keyboard_buffer() {
 }
 
 int get_keyboard_buffer_i() {
+    // For keyboard buffer in kernel, returns i for next available input slot
     return key_buffer_i;
 }
 
 int get_max_keyboard_buffer() {
     return MAX_KEY_BUFFER;
+}
+
+char get_last_keystroke() {
+    int key_buffer_i = get_keyboard_buffer_i();
+    if (key_buffer_i == 0) {
+        key_buffer_i = MAX_KEY_BUFFER;
+    }
+    return key_buffer[key_buffer_i-1];
 }

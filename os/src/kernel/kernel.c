@@ -6,6 +6,7 @@
 #include "kernel.h"
 #include "../libc/string.h"
 #include "../libc/mem.h"
+#include "../programs/portfolio.h"
 #include <stdint.h>
 
 #define BACKSPACE 0x0E
@@ -18,7 +19,11 @@ void kernel_main() {
     isr_install();
     irq_install();
 
+    // Goes to portfolio program first :P
+    portfolio_main();
 
+    // Boots back to CLI environment
+    clear_screen();
     kprint("Type something, it will go through the kernel\n"
         "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
 
@@ -29,11 +34,11 @@ void kernel_main() {
         user_input(command);
 
         // Get input from keyboard interrupts
-        wait_for_keyboard_input(command);
+        wait_for_keyboard_input(0, command);
     }
 }
 
-void wait_for_keyboard_input(out_buffer) {
+char wait_for_keyboard_input(int keystroke_mode, char* out_buffer) {
     //TODO: Avoid using strlen and counting the input_buffer strlen ourselves
 
     // Kernel function keeping its own buffer
@@ -48,7 +53,6 @@ void wait_for_keyboard_input(out_buffer) {
 
     // Info from keyboard driver
     char* keyboard_buffer = get_keyboard_buffer();
-    char* curr_buf_ptr = keyboard_buffer;
     int key_buffer_start_i = get_keyboard_buffer_i();
     int key_buffer_max = get_max_keyboard_buffer();
 
@@ -61,6 +65,11 @@ void wait_for_keyboard_input(out_buffer) {
         while (key_buffer_start_i != key_buffer_i) {
             // Get character
             char curr_char = keyboard_buffer[key_buffer_start_i];
+
+            // For keystroke mode, immediately returns character when there is change in keyboard buffer
+            if (keystroke_mode == 1) {
+                return curr_char;
+            }
             
             // Write to terminal
             write_serial(curr_char);
@@ -76,9 +85,6 @@ void wait_for_keyboard_input(out_buffer) {
             } else if (curr_char == ENTER) {
                 // TODO: Pressing ENTER should return the function back to kernel_main
                 kprintln("");
-                //kprint("> ");
-                // user_input(input_buffer); /* kernel-controlled function */
-                // input_buffer[0] = '\0';
                 strcpy(input_buffer, out_buffer, INPUT_MAX_CHARS);
                 return;
             } else if (strlen(input_buffer) == INPUT_MAX_CHARS-1) {
@@ -106,6 +112,7 @@ void user_input(char *input) {
 
     if (strcmp(input, "END") == 0) {
         kprint("Stopping the CPU. Bye!\n");
+        // Stopping interrupts and halt CPU
         asm volatile("cli");
         asm volatile("hlt");
     } else if (strcmp(input, "PAGE") == 0) {
@@ -131,7 +138,10 @@ void user_input(char *input) {
         kprintln_animated(tick_str);
     } else if (strcmp(input, "CLS") == 0) {
         clear_screen();
+    } else if (strcmp(input, "PORTFOLIO") == 0) {
+        portfolio_main();
     } else if (strcmp(input, '\0') == 0) {
+        // No-op commands; respond nothing
     } else {
         kprint("You said: ");
         kprint(input);

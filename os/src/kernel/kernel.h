@@ -3,6 +3,6 @@
 
 void user_input(char *input);
 
-void wait_for_keyboard_input();
+char wait_for_keyboard_input(int keystroke_mode, char* out_buffer);
 
 #endif
